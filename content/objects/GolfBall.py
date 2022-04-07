@@ -2,10 +2,20 @@ import pygame, math, os, random
 
 import content.modules.Util as Util
 from content.objects.GrassParticle import GrassParticle
+from content.modules.Audio import Audio
 
 class GolfBall(pygame.sprite.Sprite):
     def __init__(self, canvas, world, x, y):
         super().__init__()
+
+        self.swingSounds = Audio()
+        self.swingSounds.loadSound("content/assets/sounds/ball/swing-1.ogg")
+        self.swingSounds.loadSound("content/assets/sounds/ball/swing-2.ogg")
+        
+        self.hitSounds = Audio()
+        self.hitSounds.loadSound("content/assets/sounds/wall/impact-1.ogg")
+        self.hitSounds.loadSound("content/assets/sounds/wall/impact-2.ogg")
+        self.hitSounds.loadSound("content/assets/sounds/wall/impact-3.ogg")
 
         self.defaultImage = pygame.image.load(os.path.join(Util.rootDirectory, "content/assets/sprites/ball-3.png"))
         self.rect = self.defaultImage.get_rect()
@@ -38,36 +48,61 @@ class GolfBall(pygame.sprite.Sprite):
         if (event.type == pygame.MOUSEBUTTONUP):
             if (self.holding):
                 self.launchBall()
-        
+    
+    
     def update(self):
-        self.velocity = max(self.velocity - 0.1, 0)
-
-        self.posX += math.cos(math.radians(self.rotation)) * self.velocity
-        self.posY += math.sin(math.radians(self.rotation)) * self.velocity
+        self.velocity = max(self.velocity - 0.03, 0)
+        
+        newPotX = self.posX + math.cos(math.radians(self.rotation)) * self.velocity
+        newPotY = self.posY + math.sin(math.radians(self.rotation)) * self.velocity
 
         # make the ball bounce off the walls
-        if self.posX < 0:
-            self.posX = 0
+        if newPotX < 0:
+            newPotX = 0
             self.rotation = 180 + self.rotation
-        elif self.posX > 16*8 - (self.rect.size[0]):
-            self.posX = 16*8 - (self.rect.size[0])
+        elif newPotX > 16*8 - (self.rect.size[0]):
+            newPotX = 16*8 - (self.rect.size[0])
             self.rotation = 180 + self.rotation
-        elif self.posY < 0:
-            self.posY = 0
+        elif newPotY < 0:
+            newPotY = 0
             self.rotation = 360 - self.rotation
-        elif self.posY > 16*8 - (self.rect.size[1]):
-            self.posY = 16*8 - (self.rect.size[1])
+        elif newPotY > 16*8 - (self.rect.size[1]):
+            newPotY = 16*8 - (self.rect.size[1])
             self.rotation = 360 - self.rotation
+
+        self.posX = newPotX
+        self.posY = newPotY
 
         # make the ball bounce off the bricks
         for obj in self.world.objectClasses:
             if (type(obj).__name__ == "BrickWall" or type(obj).__name__ == "GolfBall" and obj != self):
                 # check if the ball is colliding with the brick
-                if (obj.rect.colliderect(self.rect)):
-                    # inverse the ball's rotation
-                    self.rotation = self.rotation + 180
+                if (obj.rect.colliderect(self.rect) and self.velocity > 0):
+                    hitAngle = math.degrees(math.atan2(self.rect.y-obj.rect.y, self.rect.x-obj.rect.x)) % 360
+                    
+                    if (self.rect.x - obj.rect.x < 0 and hitAngle > 135 and hitAngle < 225):
+                        # ball is to the left of the brick
+                        self.rotation = 180 + self.rotation
+                        newPotX = obj.rect.x - self.rect.size[0]
+                    elif (obj.rect.x - self.rect.x < 0 and hitAngle < 45 or hitAngle > 315):
+                        # ball is to the right of the brick
+                        self.rotation = 180 + self.rotation
+                        newPotX = obj.rect.x + obj.rect.size[0]
+                    elif (obj.rect.y - self.rect.y < 0 and hitAngle < 135 and hitAngle > 45):
+                        # ball is below the brick
+                        self.rotation = 360 - self.rotation
+                        newPotY = obj.rect.y + obj.rect.size[1]
+                    elif (self.rect.y - obj.rect.y < 0 and hitAngle > 225 and hitAngle < 315):
+                        # ball is above the brick
+                        self.rotation = 360 - self.rotation
+                        newPotY = obj.rect.y - self.rect.size[1]
+
+
 
         self.rotation = self.rotation % 360
+
+        self.posX = newPotX
+        self.posY = newPotY
 
         if (self.velocity > 0 and random.randint(1,2) == 1):
             particle = GrassParticle(self.canvas, self.world, self.posX + (random.randint(-1,1) * 4), self.posY + (random.randint(-1,1) * 4))
@@ -77,18 +112,20 @@ class GolfBall(pygame.sprite.Sprite):
 
     def launchBall(self):
         self.holding = False
-        bX, bY = (self.posX, self.posY)
+        bX, bY = (self.rect.x + (self.rect.size[0]/2), self.rect.y + (self.rect.size[1]/2))
         mX, mY = pygame.mouse.get_pos()
         mX /= (Util.windowSize / self.canvas.get_rect().size[0])
         mY /= (Util.windowSize / self.canvas.get_rect().size[1])
         
         lineLength = math.hypot(bX-mX, bY-mY)
 
-      
         angle = math.atan2(bY-mY, bX-mX)
 
         self.velocity += lineLength/10
+        self.velocity = min(self.velocity, 7)
         self.rotation = math.degrees(angle)
+
+        self.swingSounds.playSound()
     
     def attemptDraw(self):
         self.rect.x = self.posX

@@ -2,12 +2,17 @@ import pygame
 
 from content.modules.WorldParser import WorldParser
 import content.modules.Util as Util
+from content.modules.Audio import Audio
 from content.objects.Background import Background
 
 clock = pygame.time.Clock()
 
 class Golf:
     def __init__(self):
+        self.backgroundMusic = Audio()
+        self.backgroundMusic.loadSound("content/assets/sounds/music/track-1.mp3")
+        self.backgroundMusic.loopPlaySound()
+
         self.screen = pygame.display.set_mode((Util.windowSize, Util.windowSize))
 
         self.canvas = pygame.Surface((16*8, 16*8))

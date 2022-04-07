@@ -1,6 +1,7 @@
 import pygame, os
 
 import content.modules.Util as Util
+from content.modules.Audio import Audio
 
 class GolfHole(pygame.sprite.Sprite):
     def __init__(self, canvas, world, x, y):
@@ -12,6 +13,9 @@ class GolfHole(pygame.sprite.Sprite):
 
         self.rect.x = x
         self.rect.y = y
+
+        self.holeSounds = Audio()
+        self.holeSounds.loadSound("content/assets/sounds/hole/hole-1.mp3")
         
     def attemptDraw(self):
         self.canvas.blit(self.image, (self.rect.x, self.rect.y))
@@ -20,4 +24,5 @@ class GolfHole(pygame.sprite.Sprite):
         for i, obj in enumerate(self.world.objectClasses):
             if (type(obj).__name__ == "GolfBall"):
                 if (obj.rect.colliderect(self.rect)):
+                    self.holeSounds.playSound()
                     del self.world.objectClasses[i]

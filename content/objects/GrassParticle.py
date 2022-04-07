@@ -1,4 +1,4 @@
-import pygame, math, os
+import pygame, math, os, random
 
 import content.modules.Util as Util
 
@@ -20,9 +20,12 @@ class GrassParticle(pygame.sprite.Sprite):
         self.rect.y = self.posY
 
         self.rotation = 0
-        self.imageRotation = 0
+        self.imageRotation = random.randint(0, 360)
         
         self.zIndex = -1
+
+        self.opacity = 255
+        self.deathTick = 0
         
     def update(self):
         self.velocity = max(self.velocity - 0.2, 0)
@@ -33,7 +36,11 @@ class GrassParticle(pygame.sprite.Sprite):
         self.rotation = self.rotation % 360
 
         if (self.velocity == 0):
-            self.kill()
+            self.deathTick += random.randint(1, 3)
+            if (self.deathTick >= 100):
+                self.opacity -= random.randint(1, 3)
+                if (self.opacity <= 0):
+                    self.kill()
 
     def kill(self):
         for i, obj in enumerate(self.world.objectClasses):
@@ -49,13 +56,13 @@ class GrassParticle(pygame.sprite.Sprite):
         self.rect.x = self.posX
         self.rect.y = self.posY
 
-        if (self.velocity > 0):
-            self.imageRotation += 0.5 * self.velocity
+        self.imageRotation += 1 * self.velocity
         if (self.imageRotation > 360):
             self.imageRotation = 0
 
         self.image = pygame.transform.rotate(self.defaultImage, self.imageRotation)
         self.image = pygame.transform.scale(self.image, (int(self.rect.size[0]), int(self.rect.size[1])))
+        self.image.fill((255, 255, 255, self.opacity), None, pygame.BLEND_RGBA_MULT)
 
         pygame.transform.rotate(self.image, self.rotation)
         self.canvas.blit(self.image, (self.rect.x, self.rect.y))
