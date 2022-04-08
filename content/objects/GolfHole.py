@@ -23,6 +23,6 @@ class GolfHole(pygame.sprite.Sprite):
     def update(self):
         for i, obj in enumerate(self.world.objectClasses):
             if (type(obj).__name__ == "GolfBall"):
-                if (obj.rect.colliderect(self.rect)):
+                if (obj.rect.colliderect(self.rect) and not obj.targetHole):
                     self.holeSounds.playSound()
-                    del self.world.objectClasses[i]
+                    obj.targetHole = self

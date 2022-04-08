@@ -34,6 +34,8 @@ class GolfBall(pygame.sprite.Sprite):
         self.imageRotation = 0
 
         self.holding = False
+        self.targetHole = None
+        self.opacity = 255
 
     def event(self, event):
         if (event.type == pygame.MOUSEBUTTONDOWN):
@@ -51,6 +53,18 @@ class GolfBall(pygame.sprite.Sprite):
     
     
     def update(self):
+        if (self.targetHole):
+            self.opacity -= 5
+            if (random.randint(1,3) == 3):
+                holeAngle = math.degrees(math.atan2(self.targetHole.rect.y+4+random.randint(-3,3)-self.rect.y, self.targetHole.rect.x+4+random.randint(-3,3)-self.rect.x)) % 360
+                self.rotation = holeAngle #+ random.randint(-22,22)
+
+        if (self.targetHole and self.opacity <= 0):
+            for i, obj in enumerate(self.world.objectClasses):
+                if (obj == self):
+                    del self.world.objectClasses[i]
+                    return
+        
         self.velocity = max(self.velocity - 0.03, 0)
         
         newPotX = self.posX + math.cos(math.radians(self.rotation)) * self.velocity
@@ -76,35 +90,43 @@ class GolfBall(pygame.sprite.Sprite):
         # make the ball bounce off the bricks
         for obj in self.world.objectClasses:
             if (type(obj).__name__ == "BrickWall" or type(obj).__name__ == "GolfBall" and obj != self):
+                collisionObjects = []
                 # check if the ball is colliding with the brick
                 if (obj.rect.colliderect(self.rect) and self.velocity > 0):
+                    collisionObjects.append(obj)
+                
+                collisionObjects.sort(key=lambda x: pygame.math.Vector2(self.rect.x, self.rect.y).distance_to((x.rect.x, x.rect.y)))
+
+                if (len(collisionObjects) > 0):
+                    obj = collisionObjects[0]
+                    
                     hitAngle = math.degrees(math.atan2(self.rect.y-obj.rect.y, self.rect.x-obj.rect.x)) % 360
                     
-                    if (self.rect.x - obj.rect.x < 0 and hitAngle > 135 and hitAngle < 225):
+                    if (self.rect.x - obj.rect.x < 0 and hitAngle > 111 and hitAngle < 225):
                         # ball is to the left of the brick
                         self.rotation = 180 + self.rotation
                         newPotX = obj.rect.x - self.rect.size[0]
-                    elif (obj.rect.x - self.rect.x < 0 and hitAngle < 45 or hitAngle > 315):
+                    elif (obj.rect.x - self.rect.x < 0 and hitAngle < 45 or hitAngle > 335):
                         # ball is to the right of the brick
                         self.rotation = 180 + self.rotation
                         newPotX = obj.rect.x + obj.rect.size[0]
-                    elif (obj.rect.y - self.rect.y < 0 and hitAngle < 135 and hitAngle > 45):
+                    elif (obj.rect.y - self.rect.y < 0 and hitAngle < 111 and hitAngle >= 45):
                         # ball is below the brick
                         self.rotation = 360 - self.rotation
                         newPotY = obj.rect.y + obj.rect.size[1]
-                    elif (self.rect.y - obj.rect.y < 0 and hitAngle > 225 and hitAngle < 315):
+                    elif (self.rect.y - obj.rect.y < 0 and hitAngle > 225 and hitAngle < 335):
                         # ball is above the brick
                         self.rotation = 360 - self.rotation
                         newPotY = obj.rect.y - self.rect.size[1]
-
-
+                                        
+                    break
 
         self.rotation = self.rotation % 360
 
         self.posX = newPotX
         self.posY = newPotY
 
-        if (self.velocity > 0 and random.randint(1,2) == 1):
+        if (self.velocity > 0):
             particle = GrassParticle(self.canvas, self.world, self.posX + (random.randint(-1,1) * 4), self.posY + (random.randint(-1,1) * 4))
             particle.velocity = self.velocity
             particle.rotation = (self.rotation + 180) % 360
@@ -137,7 +159,8 @@ class GolfBall(pygame.sprite.Sprite):
             self.imageRotation = 0
 
         self.image = pygame.transform.rotate(self.defaultImage, self.imageRotation)
-
+        self.image.fill((255, 255, 255, self.opacity), None, pygame.BLEND_RGBA_MULT)
+        
         pygame.transform.rotate(self.image, self.rotation)
         self.canvas.blit(self.image, (self.rect.x, self.rect.y))
 
