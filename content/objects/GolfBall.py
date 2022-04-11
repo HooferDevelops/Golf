@@ -47,6 +47,10 @@ class GolfBall(pygame.sprite.Sprite):
 
             if self.rect.collidepoint((mX, mY)):
                 self.holding = True
+                for i, obj in enumerate(self.world.objectClasses):
+                    if (obj.__class__.__name__ == "Pointer"):
+                        del self.world.objectClasses[i]
+
         if (event.type == pygame.MOUSEBUTTONUP):
             if (self.holding):
                 self.launchBall()
@@ -58,12 +62,23 @@ class GolfBall(pygame.sprite.Sprite):
             if (random.randint(1,3) == 3):
                 holeAngle = math.degrees(math.atan2(self.targetHole.rect.y+4+random.randint(-3,3)-self.rect.y, self.targetHole.rect.x+4+random.randint(-3,3)-self.rect.x)) % 360
                 self.rotation = holeAngle #+ random.randint(-22,22)
+                
 
         if (self.targetHole and self.opacity <= 0):
             for i, obj in enumerate(self.world.objectClasses):
                 if (obj == self):
                     del self.world.objectClasses[i]
+
+            # check if there are any balls left
+            for obj in self.world.objectClasses:
+                if (obj.__class__.__name__ == "GolfBall" and obj != self):
+                    print("obj")
                     return
+            
+            if (self.world.checkForWorld("content/assets/worlds/%s.json" % (self.world.worldId+1))):
+                self.world.loadWorld("content/assets/worlds/%s.json" % (self.world.worldId+1))
+            else:
+                self.world.loadWorld("content/assets/worlds/win.json")
         
         self.velocity = max(self.velocity - 0.03, 0)
         

@@ -1,5 +1,7 @@
 import pygame, random
 
+import content.modules.Util as Util
+
 class Audio:
     def __init__(self):
         pygame.mixer.init()

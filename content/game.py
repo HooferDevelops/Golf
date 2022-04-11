@@ -19,7 +19,7 @@ class Golf:
         self.background = Background(self.canvas, 16*8, 16*8)
 
         self.world = WorldParser(self.canvas)
-        self.world.loadWorld("content/assets/worlds/2.json")
+        self.world.loadWorld("content/assets/worlds/1.json")
 
         pygame.display.set_caption("Golf")
 
